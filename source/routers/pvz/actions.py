@@ -1,11 +1,10 @@
-from typing import Annotated, Any
+from typing import Annotated, Any, List, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from source.constants.routers import RouterInfo, Endpoints
 from source.db.db_types import RoleType, ReceptionStatus
-from source.shemas.endpoint_shemas import ResponseMessage, PVZUnit, ProductUnit
+from source.shemas.endpoint_shemas import ResponseMessage, PVZUnit, ProductUnit, PVZList
 from source.db.models import User
 from source.routers.auth.services import get_current_user, get_async_session
 from source.db.methods import (
@@ -15,7 +14,8 @@ from source.db.methods import (
     create_product_for_reception,
     get_pvz_by_reception_id,
     close_reception_for_pvz,
-    delete_last_product_for_reception
+    delete_last_product_for_reception,
+    get_pvz_receptions_products
 )
 
 router = APIRouter(
@@ -179,4 +179,23 @@ async def delete_last_product(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Неверный запрос, нет активной приемки или нет товаров для удаления",
+        )
+
+@router.get(
+    path=Endpoints.PVZ_END,
+    status_code=status.HTTP_200_OK,
+    summary="Получение списка ПВЗ с фильтрацией по дате приемки и пагинацией"
+)
+async def pvz_list(
+    current_user: Annotated[User, Depends(get_current_user)],
+    pvz_data: PVZList,
+    db: AsyncSession = Depends(get_async_session)
+) -> List[Dict[str, Any]]:
+    try:
+        result_list = await get_pvz_receptions_products(db, pvz_data)
+        return result_list
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный запрос",
         )

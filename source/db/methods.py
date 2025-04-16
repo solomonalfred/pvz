@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from source.db.models import User, PVZTable, Reception, Product
-from source.shemas.endpoint_shemas import Registration, PVZUnit, ProductUnit
+from source.shemas.endpoint_shemas import Registration, PVZUnit, ProductUnit, PVZList
 from source.db.db_types import ReceptionStatus
 from source.db.engine import get_async_session
 from source.utils.hasher import PasswordManager
@@ -99,3 +99,29 @@ async def delete_last_product_for_reception(session: AsyncSession, reception_id:
         await session.delete(last_product)
         await session.commit()
     return last_product
+
+
+async def get_pvz_receptions_products(session: AsyncSession, query_params: PVZList) -> List[Dict[str, Any]]:
+    offset_val = (query_params.page - 1) * query_params.limit
+    stmt = select(Reception).where(
+        Reception.dateTime >= query_params.start_date,
+        Reception.dateTime <= query_params.end_date
+    ).order_by(Reception.dateTime.desc()).offset(offset_val).limit(query_params.limit)
+
+    result = await session.execute(stmt)
+    receptions = result.scalars().unique().all()
+    pvz_group: Dict[int, List[Dict[str, int]]] = {}
+    for rec in receptions:
+        pvz_id = rec.pvzId
+        if not rec.products:
+            continue
+        for prod in rec.products:
+            if pvz_id not in pvz_group:
+                pvz_group[pvz_id] = []
+            pvz_group[pvz_id].append({"reception": rec.id, "product": prod.id})
+    result_list = [
+        {"pvz": pvz_id, "receptions": rec_list} for pvz_id, rec_list in pvz_group.items()
+    ]
+
+    return result_list
+

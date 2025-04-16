@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from source.constants.routers import RouterInfo, Endpoints
-from source.shemas.endpoint_shemas import Token, Registration, Credentials
+from source.shemas.endpoint_shemas import Token, Registration, Credentials, DummyUser
 from source.db.engine import get_async_session
 from source.db.methods import (
     get_user_by_email,
@@ -22,10 +22,21 @@ router = APIRouter(
 )
 
 @router.post(
+    path=Endpoints.DUMMY,
+    response_model=Token,
+    status_code=status.HTTP_200_OK,
+    summary="Получение тестового токена"
+)
+async def dummy_login(
+    user: DummyUser
+) -> Any:
+    ...
+
+@router.post(
     path=Endpoints.REGISTRATION,
     response_model=Token,
     status_code=status.HTTP_201_CREATED,
-    summary="Registration user"
+    summary="Регистрация пользователя"
 )
 async def registration(
         user_data: Registration,
@@ -58,7 +69,7 @@ async def registration(
     path=Endpoints.LOGIN,
     response_model=Token,
     status_code=status.HTTP_200_OK,
-    summary="Аутентификация и получение JWT-токена.",
+    summary="Авторизация пользователя",
 )
 async def login(
     user_data: OAuth2PasswordRequestForm = Depends(),
