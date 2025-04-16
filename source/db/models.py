@@ -1,7 +1,9 @@
 from typing import Annotated, Optional
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, String, Enum, DateTime, func
+from sqlalchemy import CheckConstraint, Column, ForeignKey, String, Enum, DateTime, func
 from sqlalchemy.ext.declarative import as_declarative
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+import uuid
 
 from source.db.db_types import RoleType, ReceptionStatus, ProductType, CityType
 
@@ -21,7 +23,7 @@ class Base:
             columns.append(f"{column}={getattr(self, column)}")
         return f"[{self.__class__.__name__}]{ends}{tab}{f',{ends + tab}'.join(columns)}"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
 
 class User(Base):
     __tablename__ = "user"
@@ -41,9 +43,12 @@ class Reception(Base):
     __tablename__ = "reception"
 
     dateTime: Annotated[DateTime, None] = Column(DateTime, nullable=False, default=func.now())
-    pvzId: int = Column(Integer, ForeignKey('pvztable.id'), nullable=False)
-    status: Annotated[str, 64] = Column(Enum(ReceptionStatus, name="reception_status_enum"),
-                                        nullable=False, default=ReceptionStatus.in_progress)
+    pvzId: uuid.UUID = Column(PG_UUID(as_uuid=True), ForeignKey('pvztable.id'), nullable=False)
+    status: Annotated[str, 64] = Column(
+        Enum(ReceptionStatus, name="reception_status_enum"),
+        nullable=False,
+        default=ReceptionStatus.in_progress
+    )
     pvz = relationship("PVZTable", back_populates="receptions")
     products = relationship("Product", back_populates="reception", cascade="all, delete-orphan")
 
@@ -51,7 +56,6 @@ class Product(Base):
     __tablename__ = "product"
 
     dateTime: Annotated[DateTime, None] = Column(DateTime, nullable=False, default=func.now())
-    type: Annotated[str, 64] = Column(Enum(ProductType, name="product_type_enum"),
-                                      nullable=False)
-    receptionId: int = Column(Integer, ForeignKey('reception.id'), nullable=False)
+    type: Annotated[str, 64] = Column(Enum(ProductType, name="product_type_enum"), nullable=False)
+    receptionId: uuid.UUID = Column(PG_UUID(as_uuid=True), ForeignKey('reception.id'), nullable=False)
     reception = relationship("Reception", back_populates="products")

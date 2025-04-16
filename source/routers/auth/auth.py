@@ -7,7 +7,8 @@ from source.shemas.endpoint_shemas import Token, Registration, Credentials, Dumm
 from source.db.engine import get_async_session
 from source.db.methods import (
     get_user_by_email,
-    create_user
+    create_user,
+    get_or_create_dummy_user
 )
 from source.routers.auth.services import (
     generate_token,
@@ -28,9 +29,18 @@ router = APIRouter(
     summary="Получение тестового токена"
 )
 async def dummy_login(
-    user: DummyUser
+    dummy: DummyUser,
+    db: AsyncSession = Depends(get_async_session)
 ) -> Any:
-    ...
+    try:
+        user = await get_or_create_dummy_user(db, dummy)
+        token = await generate_token({"data": user.email, "role": user.role})
+        return token
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный запрос",
+        )
 
 @router.post(
     path=Endpoints.REGISTRATION,
@@ -39,8 +49,8 @@ async def dummy_login(
     summary="Регистрация пользователя"
 )
 async def registration(
-        user_data: Registration,
-        db: AsyncSession = Depends(get_async_session)
+    user_data: Registration,
+    db: AsyncSession = Depends(get_async_session)
 ) -> Any:
     try:
         user = await get_user_by_email(db, str(user_data.email))

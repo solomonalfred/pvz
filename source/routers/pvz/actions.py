@@ -1,6 +1,9 @@
+from datetime import datetime
+from uuid import UUID
 from typing import Annotated, Any, List, Dict
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
 
 from source.constants.routers import RouterInfo, Endpoints
 from source.db.db_types import RoleType, ReceptionStatus
@@ -57,7 +60,7 @@ async def create_pvz_(
 )
 async def create_reception(
     current_user: Annotated[User, Depends(get_current_user)],
-    pvz_id: int,
+    pvz_id: UUID,
     db: AsyncSession = Depends(get_async_session)
 ) -> Any:
     user_role = current_user.role
@@ -68,7 +71,7 @@ async def create_reception(
         )
     try:
         last_rec = await get_last_reception_by_pvz(db, pvz_id)
-        if last_rec.status == ReceptionStatus.in_progress:
+        if last_rec is not None and last_rec.status == ReceptionStatus.in_progress:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Неверный запрос или есть незакрытая приемка",
@@ -89,7 +92,6 @@ async def create_reception(
 )
 async def create_product(
     current_user: Annotated[User, Depends(get_current_user)],
-    reception_id: int,
     product: ProductUnit,
     db: AsyncSession = Depends(get_async_session)
 ) -> Any:
@@ -100,14 +102,13 @@ async def create_product(
             detail="Доступ запрещен",
         )
     try:
-        pvz = await get_pvz_by_reception_id(db, reception_id)
-        last_rec = await get_last_reception_by_pvz(db, pvz.id)
-        if last_rec.status == ReceptionStatus.close:
+        last_rec = await get_last_reception_by_pvz(db, product.pvzId)
+        if last_rec is None or last_rec.status == ReceptionStatus.close:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Неверный запрос или нет активной приемки",
             )
-        await create_product_for_reception(db, reception_id, product)
+        await create_product_for_reception(db, last_rec.id, product)
         return {"description": "Товар добавлен"}
     except Exception as e:
         raise HTTPException(
@@ -123,7 +124,7 @@ async def create_product(
 )
 async def close_reception(
     current_user: Annotated[User, Depends(get_current_user)],
-    pvz_id: int,
+    pvz_id: UUID,
     db: AsyncSession = Depends(get_async_session)
 ) -> Any:
     user_role = current_user.role
@@ -134,7 +135,7 @@ async def close_reception(
         )
     try:
         last_rec = await get_last_reception_by_pvz(db, pvz_id)
-        if last_rec.status == ReceptionStatus.close:
+        if last_rec is None or last_rec.status == ReceptionStatus.close:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Неверный запрос или приемка уже закрыта",
@@ -157,7 +158,7 @@ async def close_reception(
 )
 async def delete_last_product(
     current_user: Annotated[User, Depends(get_current_user)],
-    pvz_id: int,
+    pvz_id: UUID,
     db: AsyncSession = Depends(get_async_session)
 ) -> Any:
     user_role = current_user.role
@@ -168,33 +169,54 @@ async def delete_last_product(
         )
     try:
         last_rec = await get_last_reception_by_pvz(db, pvz_id)
-        if last_rec.status == ReceptionStatus.close:
+        if last_rec is None or last_rec.status == ReceptionStatus.close:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Неверный запрос, нет активной приемки или нет товаров для удаления",
             )
-        await delete_last_product_for_reception(db, last_rec.id)
-        return {"description": "Товар удален"}
+        resp = await delete_last_product_for_reception(db, last_rec.id)
+        if resp:
+            return {"description": "Товар удален"}
+        return {"description": "Не осталось товаров на этой приёмке"}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Неверный запрос, нет активной приемки или нет товаров для удаления",
         )
 
+
 @router.get(
-    path=Endpoints.PVZ_END,
+    path=Endpoints.PVZ_END,  # например, "/pvz"
     status_code=status.HTTP_200_OK,
     summary="Получение списка ПВЗ с фильтрацией по дате приемки и пагинацией"
 )
 async def pvz_list(
-    current_user: Annotated[User, Depends(get_current_user)],
-    pvz_data: PVZList,
-    db: AsyncSession = Depends(get_async_session)
+        start_date: str = Query(..., description="Дата начала в формате dd.MM.YYYYHH:MM:SS"),
+        end_date: str = Query(..., description="Дата окончания в формате dd.MM.YYYYHH:MM:SS"),
+        page: int = Query(1, ge=1, description="Номер страницы"),
+        limit: int = Query(1, ge=1, le=30, description="Количество элементов на странице"),
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_async_session)
 ) -> List[Dict[str, Any]]:
+    try:
+        start_date_parsed = datetime.strptime(start_date, "%d.%m.%Y%H:%M:%S")
+        end_date_parsed = datetime.strptime(end_date, "%d.%m.%Y%H:%M:%S")
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный формат даты. Ожидается dd.MM.YYYYHH:MM:SS"
+        )
+    pvz_data = PVZList(
+        start_date=start_date_parsed,
+        end_date=end_date_parsed,
+        page=page,
+        limit=limit
+    )
     try:
         result_list = await get_pvz_receptions_products(db, pvz_data)
         return result_list
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Неверный запрос",

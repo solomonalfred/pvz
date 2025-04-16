@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial
 
-Revision ID: 2effc41c56c5
+Revision ID: d8f775aa831e
 Revises: 
-Create Date: 2025-04-14 19:55:43.058909
+Create Date: 2025-04-16 17:31:28.001630
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2effc41c56c5'
+revision: str = 'd8f775aa831e'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table('pvztable',
     sa.Column('registrationDate', sa.DateTime(), nullable=False),
     sa.Column('city', sa.Enum('moscow', 'spb', 'kazan', name='city_enum'), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_pvztable_id'), 'pvztable', ['id'], unique=False)
@@ -32,15 +32,15 @@ def upgrade() -> None:
     sa.Column('password', sa.String(length=255), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('role', sa.Enum('employee', 'moderator', name='role_enum'), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_user_id'), 'user', ['id'], unique=False)
     op.create_table('reception',
     sa.Column('dateTime', sa.DateTime(), nullable=False),
-    sa.Column('pvzId', sa.Integer(), nullable=False),
+    sa.Column('pvzId', sa.UUID(), nullable=False),
     sa.Column('status', sa.Enum('in_progress', 'close', name='reception_status_enum'), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.ForeignKeyConstraint(['pvzId'], ['pvztable.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -48,8 +48,8 @@ def upgrade() -> None:
     op.create_table('product',
     sa.Column('dateTime', sa.DateTime(), nullable=False),
     sa.Column('type', sa.Enum('electonic', 'clothes', 'shoes', name='product_type_enum'), nullable=False),
-    sa.Column('receptionId', sa.Integer(), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('receptionId', sa.UUID(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.ForeignKeyConstraint(['receptionId'], ['reception.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
