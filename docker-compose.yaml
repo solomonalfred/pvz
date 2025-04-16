@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: source/docker/Dockerfile
+    container_name: app
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - .env
+    depends_on:
+      - database
+    environment:
+      DB_HOST: database
+
+#  nginx:
+#    image: nginx:latest
+#    container_name: nginx
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./nginx/fastapi.conf:/etc/nginx/conf.d/fastapi.conf:ro
+#      - ./certs:/etc/ssl/certs:ro
+##      - ./certs:/etc/ssl/private:ro
+#    depends_on:
+#      - app
+
+  database:
+    image: postgres:17
+    container_name: database
+    restart: always
+    ports:
+      - "5434:${DB_PORT}"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: always
+    ports:
+      - "7777:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${ADMIN_PASSWORD}
+    depends_on:
+      - database
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  postgres_data:
+  pgadmin_data:
