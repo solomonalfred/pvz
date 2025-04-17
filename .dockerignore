@@ -5,3 +5,4 @@ source/docs
 main.py
 /.pre-commit-config.yaml
 /.pylintrc
+Makefile

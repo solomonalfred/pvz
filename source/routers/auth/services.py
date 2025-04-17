@@ -11,7 +11,8 @@ from source.utils.hasher import PasswordManager
 from source.config import get_settings
 from source.shemas.endpoint_shemas import Credentials, Token
 from source.db.models import User
-from source.db.methods import get_user_by_email, get_async_session
+from source.db.methods import get_user_by_email
+from source.db.engine import get_async_session
 from source.routers.auth.exception import credentials_exception
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
