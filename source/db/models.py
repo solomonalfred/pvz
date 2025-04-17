@@ -1,5 +1,5 @@
-from typing import Annotated, Optional
-from sqlalchemy import CheckConstraint, Column, ForeignKey, String, Enum, DateTime, func
+from typing import Annotated
+from sqlalchemy import Column, ForeignKey, String, Enum, DateTime, func
 from sqlalchemy.ext.declarative import as_declarative
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID

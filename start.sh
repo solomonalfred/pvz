@@ -5,4 +5,4 @@ alembic upgrade head
 
 python source/grpc_server.py &
 
-uvicorn source.app:app --host 0.0.0.0 --port ${PORT:-8000}
+uvicorn source.app:app --host 0.0.0.0 --port ${PORT}

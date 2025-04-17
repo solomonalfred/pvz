@@ -4,6 +4,7 @@ from typing import Annotated, Any, List, Dict
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
+from prometheus_client import Counter
 
 from source.constants.routers import RouterInfo, Endpoints
 from source.db.db_types import RoleType, ReceptionStatus
@@ -20,6 +21,11 @@ from source.db.methods import (
     delete_last_product_for_reception,
     get_pvz_receptions_products
 )
+
+
+PVZ_CREATED = Counter('pvz_created_total', 'Количество созданных ПВЗ')
+RECEPTION_CREATED = Counter('receptions_created_total', 'Количество созданных приёмок')
+PRODUCT_ADDED = Counter('products_added_total', 'Количество добавленных товаров')
 
 router = APIRouter(
     prefix=RouterInfo.prefix,
@@ -45,6 +51,7 @@ async def create_pvz_(
         )
     try:
         await create_pvz(db, pvz_data)
+        PVZ_CREATED.inc()
         return {"description": "ПВЗ создан"}
     except Exception as e:
         raise HTTPException(
@@ -77,6 +84,7 @@ async def create_reception(
                 detail="Неверный запрос или есть незакрытая приемка",
             )
         await create_reception_for_pvz(db, pvz_id)
+        RECEPTION_CREATED.inc()
         return {"description": "Приемка создана"}
     except Exception as e:
         raise HTTPException(
@@ -109,6 +117,7 @@ async def create_product(
                 detail="Неверный запрос или нет активной приемки",
             )
         await create_product_for_reception(db, last_rec.id, product)
+        PRODUCT_ADDED.inc()
         return {"description": "Товар добавлен"}
     except Exception as e:
         raise HTTPException(

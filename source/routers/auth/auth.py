@@ -37,6 +37,7 @@ async def dummy_login(
         token = await generate_token({"data": user.email, "role": user.role})
         return token
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Неверный запрос",
