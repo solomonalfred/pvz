@@ -26,6 +26,11 @@ services:
       - "3000:3000"
     depends_on:
       - database
+    env_file:
+      - .env
+    environment:
+      DB_HOST: database
+      DB_PORT: "5432"
     command: ["python", "source/grpc_server.py"]
 
 #  nginx:
@@ -46,7 +51,7 @@ services:
     container_name: database
     restart: always
     ports:
-      - "5434:${DB_PORT}"
+      - "${DB_PORT_INTERNAL}:${DB_PORT}"
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}

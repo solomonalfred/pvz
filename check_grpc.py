@@ -9,6 +9,9 @@ async def run():
         request = pvz_pb2.GetPVZListRequest()
         response = await stub.GetPVZList(request)
         print("Полученный ответ:")
+        if len(response.pvzs) == 1:
+            print(response.pvzs[0])
+            return
         for pvz in response.pvzs:
             print(f"ID: {pvz.id}, Registration Date: {pvz.registration_date}, City: {pvz.city}")
 

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
+    DB_PORT_INTERNAL: int = 5434
     DB_USER: str
     DB_PASS: SecretStr
     DB_NAME: str
@@ -32,6 +33,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     DB_URI: str | None = None
+    DB_URI_GRPC: str | None = None
 
     @field_validator("DB_URI")
     @classmethod
@@ -45,6 +47,22 @@ class Settings(BaseSettings):
                 password=info.data["DB_PASS"].get_secret_value(),
                 host=info.data["DB_HOST"],
                 port=info.data["DB_PORT"],
+                path=info.data["DB_NAME"],
+            )
+        )
+
+    @field_validator("DB_URI_GRPC")
+    @classmethod
+    def validate_db_uri_grpc(cls, value: str | None, info: FieldValidationInfo):
+        if isinstance(value, str):
+            return value
+        return str(
+            PostgresDsn.build(
+                scheme="postgresql+asyncpg",
+                username=info.data["DB_USER"],
+                password=info.data["DB_PASS"].get_secret_value(),
+                host=info.data["DB_HOST"],
+                port=info.data["DB_PORT_INTERNAL"],
                 path=info.data["DB_NAME"],
             )
         )

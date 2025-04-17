@@ -61,6 +61,7 @@ class SessionManager:
             tables = await conn.run_sync(lambda sync_conn: sql.inspect(sync_conn).get_table_name())
             return tables
 
+@asynccontextmanager
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async_session = SessionManager().get_session()
 
