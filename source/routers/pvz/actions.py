@@ -43,8 +43,8 @@ router = APIRouter(
     summary='Создание ПВЗ (только для модераторов)'
 )
 async def create_pvz_(
+    pvz_data: PVZUnit,
     current_user: User = Depends(get_current_user),
-    pvz_data: PVZUnit = Depends(),
     db: AsyncSession = Depends(get_async_session)
 ) -> Any:
     logger.info("Получен запрос на создание ПВЗ от пользователя id=%s, роль=%s", current_user.id, current_user.role)
@@ -97,8 +97,8 @@ async def create_reception(
     summary="Добавление товара в текущую приемку (только для сотрудников ПВЗ)"
 )
 async def create_product(
+    product: ProductUnit,
     current_user: User = Depends(get_current_user),
-    product: ProductUnit = Depends(),
     db: AsyncSession = Depends(get_async_session)
 ) -> Any:
     logger.info("Получен запрос на добавление товара в приемку %s от пользователя id=%s", product.pvzId, current_user.id)
