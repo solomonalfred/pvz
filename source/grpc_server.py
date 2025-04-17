@@ -3,14 +3,10 @@ import grpc
 from concurrent import futures
 from datetime import datetime, timezone
 
-# Импорт сгенерированных файлов
 import pvz_pb2
 import pvz_pb2_grpc
 
-# Предположим, что функция get_all_pvz() возвращает список объектов с полями id, registration_date и city.
-# В реальной реализации вам, скорее всего, нужно обращаться к базе данных.
 def get_all_pvz():
-    # Пример фиктивных данных
     return [
         {
             "id": "c1d3e9ae-1234-5678-9abc-def123456789",

@@ -3,7 +3,8 @@
 import grpc
 import warnings
 
-from source import pvz_pb2 as source_dot_pvz__pb2
+# from source import pvz_pb2 as source_dot_pvz__pb2
+import pvz_pb2 as source_dot_pvz__pb2
 
 GRPC_GENERATED_VERSION = '1.71.0'
 GRPC_VERSION = grpc.__version__

@@ -14,6 +14,18 @@ services:
       - database
     environment:
       DB_HOST: database
+    command: [ "uvicorn", "source.app:app", "--host", "0.0.0.0", "--port", "8000" ]
+
+  grpc:
+    build:
+      context: .
+      dockerfile: source/docker/Dockerfile
+    container_name: grpc_server
+    ports:
+      - "3000:3000"
+    depends_on:
+      - database
+    command: ["python", "source/grpc_server.py"]
 
 #  nginx:
 #    image: nginx:latest

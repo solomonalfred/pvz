@@ -12,4 +12,9 @@ RUN pip install --upgrade pip && \
 
 COPY . .
 
-CMD alembic upgrade head && uvicorn source.app:app --host 0.0.0.0 --port ${PORT}
+#CMD alembic upgrade head && python uvicorn source.app:app --host 0.0.0.0 --port ${PORT}
+
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
